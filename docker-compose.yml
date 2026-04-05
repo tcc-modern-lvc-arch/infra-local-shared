@@ -1,0 +1,66 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: shared-redis
+    # AOF persistence: safer for service-bus — survives crashes between RDB snapshots
+    command: redis-server --appendonly yes --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - shared-infra-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: shared-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin
+      - DOCKER_INFLUXDB_INIT_ORG=tcc-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=events          # primary bucket — add domain buckets via init service below
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=tcc-local-super-secret-token
+    volumes:
+      - ./data/influxdb/data:/var/lib/influxdb2
+      - ./data/influxdb/config:/etc/influxdb2
+    networks:
+      - shared-infra-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Runs once after influxdb is healthy — creates per-domain buckets
+  influxdb-init:
+    image: influxdb:2.7-alpine
+    container_name: shared-influxdb-init
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - INFLUX_HOST=http://influxdb:8086
+      - INFLUX_TOKEN=tcc-local-super-secret-token
+      - INFLUX_ORG=tcc-org
+    # Add / rename buckets to match your data domains
+    entrypoint: >
+      sh -c "
+        influx bucket create --name live-events   --org tcc-org --retention 30d &&
+        influx bucket create --name metrics       --org tcc-org --retention 7d
+      "
+    networks:
+      - shared-infra-network
+    restart: on-failure
+
+networks:
+  shared-infra-network:
+    driver: bridge

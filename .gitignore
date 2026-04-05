@@ -1,0 +1,10 @@
+# Data directories (Docker volumes)
+data/
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+
+# OS specific
+.DS_Store
+Thumbs.db
