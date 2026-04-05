@@ -24,7 +24,7 @@ services:
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
       - DOCKER_INFLUXDB_INIT_ORG=tcc-org
       - DOCKER_INFLUXDB_INIT_BUCKET=events          # primary bucket — add domain buckets via init service below
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=tcc-local-super-secret-token
@@ -56,6 +56,42 @@ services:
       sh -c "
         influx bucket create --name live-events   --org tcc-org --retention 30d &&
         influx bucket create --name metrics       --org tcc-org --retention 7d
+      "
+    networks:
+      - shared-infra-network
+    restart: on-failure
+
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: shared-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: tcc-local-root-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - shared-infra-network
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://localhost:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  vault-init:
+    image: hashicorp/vault:1.17
+    container_name: shared-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: tcc-local-root-token
+    entrypoint: >
+      sh -c "
+        vault kv put secret/live-ms-java olhovivo.token=$LIVE_MS_JAVA_OLHOVIVO_TOKEN
       "
     networks:
       - shared-infra-network
