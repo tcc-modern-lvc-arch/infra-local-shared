@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  # CQRS write side — raw checkin/checkout events written by the event-hub.
+  # Use this datasource to debug ingestion or build low-level event queries.
+  - name: InfluxDB — Events (Write)
+    type: influxdb
+    access: proxy
+    url: http://shared-influxdb:8086
+    isDefault: false
+    editable: true
+    jsonData:
+      version: Flux
+      organization: tcc-org
+      defaultBucket: events
+    secureJsonData:
+      token: tcc-local-super-secret-token

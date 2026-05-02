@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  # CQRS read side — aggregated projections produced by projection workers.
+  # This is the primary datasource for Grafana dashboards.
+  - name: InfluxDB — Projections (Read)
+    type: influxdb
+    access: proxy
+    url: http://shared-influxdb:8086
+    isDefault: true
+    editable: true
+    jsonData:
+      version: Flux
+      organization: tcc-org
+      defaultBucket: projections
+    secureJsonData:
+      token: tcc-local-super-secret-token

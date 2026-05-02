@@ -1,0 +1,35 @@
+apiVersion: 1
+datasources:
+  # CQRS write side — areas registry, entity state, outbox.
+  # Use this datasource to inspect current entity positions and outbox health.
+  - name: MariaDB — Entity State (Write)
+    type: mysql
+    access: proxy
+    url: shared-mariadb:3306
+    database: eventhub
+    user: eventhub
+    isDefault: false
+    editable: true
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: tcc-eventhub
+
+  # CQRS read side — materialized projections for reports and dashboards.
+  # Populated by projection workers; queried by Grafana panels and reports.
+  - name: MariaDB — Projections (Read)
+    type: mysql
+    access: proxy
+    url: shared-mariadb:3306
+    database: eventhub_read
+    user: eventhub_read
+    isDefault: false
+    editable: true
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: tcc-eventhub-read

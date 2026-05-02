@@ -8,6 +8,9 @@ data/
 .idea/
 *.iml
 
+# AI agent local settings
+.claude/
+
 # OS specific
 .DS_Store
 Thumbs.db

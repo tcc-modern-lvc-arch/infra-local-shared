@@ -1,21 +1,7 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: shared-redis
-    # AOF persistence: safer for service-bus — survives crashes between RDB snapshots
-    command: redis-server --appendonly yes --loglevel warning
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./data/redis:/data
-    networks:
-      - shared-infra-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+  # ── InfluxDB — time-series store ─────────────────────────────────────────────
+  # CQRS write bucket : events      (∞  retention) — raw checkin/checkout events
+  # CQRS read  bucket : projections (90d retention) — aggregated data for Grafana
   influxdb:
     image: influxdb:2.7-alpine
     container_name: shared-influxdb
@@ -26,7 +12,7 @@ services:
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
       - DOCKER_INFLUXDB_INIT_ORG=tcc-org
-      - DOCKER_INFLUXDB_INIT_BUCKET=events          # primary bucket — add domain buckets via init service below
+      - DOCKER_INFLUXDB_INIT_BUCKET=events
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=tcc-local-super-secret-token
     volumes:
       - ./data/influxdb/data:/var/lib/influxdb2
@@ -34,13 +20,14 @@ services:
     networks:
       - shared-infra-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8086/ping" ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
-  # Runs once after influxdb is healthy — creates per-domain buckets
+  # Creates the read-side bucket after InfluxDB is ready.
+  # The write-side bucket (events) is already created by DOCKER_INFLUXDB_INIT_BUCKET above.
   influxdb-init:
     image: influxdb:2.7-alpine
     container_name: shared-influxdb-init
@@ -51,16 +38,62 @@ services:
       - INFLUX_HOST=http://influxdb:8086
       - INFLUX_TOKEN=tcc-local-super-secret-token
       - INFLUX_ORG=tcc-org
-    # Add / rename buckets to match your data domains
     entrypoint: >
       sh -c "
-        influx bucket create --name live-events   --org tcc-org --retention 30d &&
-        influx bucket create --name metrics       --org tcc-org --retention 7d
+        influx bucket create --name projections --org tcc-org --retention 90d
       "
     networks:
       - shared-infra-network
     restart: on-failure
 
+  # ── MariaDB — relational store ────────────────────────────────────────────────
+  # CQRS write DB : eventhub      — areas registry, entity state, outbox
+  # CQRS read  DB : eventhub_read — materialized projections / reports
+  # Both databases are created on first startup; see mariadb/init/ for the read DB.
+  mariadb:
+    image: mariadb:11.4
+    container_name: shared-mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=tcc-root
+      - MARIADB_DATABASE=eventhub
+      - MARIADB_USER=eventhub
+      - MARIADB_PASSWORD=tcc-eventhub
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+    networks:
+      - shared-infra-network
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Creates the read-side database (eventhub_read) and its schema after MariaDB is ready.
+  # CQRS write DB : eventhub       — created by MARIADB_DATABASE above
+  # CQRS read  DB : eventhub_read  — created by this init container
+  mariadb-init:
+    image: mariadb:11.4
+    container_name: shared-mariadb-init
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      - MYSQL_PWD=tcc-root
+    entrypoint: >
+      sh -c "
+        mariadb -h shared-mariadb -u root < /sql/01_read_database.sql &&
+        mariadb -h shared-mariadb -u root < /sql/02_read_schema.sql
+      "
+    volumes:
+      - ./mariadb/init:/sql
+    networks:
+      - shared-infra-network
+    restart: on-failure
+
+  # ── Vault — secrets for external APIs ────────────────────────────────────────
   vault:
     image: hashicorp/vault:1.17
     container_name: shared-vault
@@ -74,12 +107,13 @@ services:
     networks:
       - shared-infra-network
     healthcheck:
-      test: ["CMD", "vault", "status", "-address=http://localhost:8200"]
+      test: [ "CMD", "vault", "status", "-address=http://localhost:8200" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
 
+  # Reads real API tokens from .env and seeds them into Vault KV
   vault-init:
     image: hashicorp/vault:1.17
     container_name: shared-vault-init
@@ -93,12 +127,72 @@ services:
       VAULT_TOKEN: tcc-local-root-token
     entrypoint: >
       sh -c "
-        vault kv put secret/live-ms-java olhovivo.token=$LIVE_MS_JAVA_OLHOVIVO_TOKEN
+        vault kv put secret/live-ms-java olhovivo.token=$LIVE_MS_JAVA_OLHOVIVO_TOKEN &&
+        vault kv put secret/constructive-airsim-ms nvidia.api_key=$NVIDIA_NIM_API_KEY
       "
     networks:
       - shared-infra-network
     restart: on-failure
 
+  # ── Event Hub — gRPC event ingestion service ─────────────────────────────────
+  event-hub:
+    build:
+      context: ../event-hub
+      dockerfile: Dockerfile
+    container_name: event-hub
+    ports:
+      - "50051:50051"
+    env_file:
+      - ../event-hub/.env
+    volumes:
+      - event-hub-data:/data
+    networks:
+      - shared-infra-network
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mariadb-init:
+        condition: service_completed_successfully
+      influxdb:
+        condition: service_healthy
+      influxdb-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ── Grafana — dashboards ──────────────────────────────────────────────────────
+  # Default datasource : InfluxDB Projections (read side)
+  # All 4 CQRS stores are provisioned as datasources for debugging.
+  grafana:
+    image: grafana/grafana:latest
+    container_name: shared-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+    networks:
+      - shared-infra-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
 networks:
   shared-infra-network:
     driver: bridge
+
+volumes:
+  event-hub-data:
