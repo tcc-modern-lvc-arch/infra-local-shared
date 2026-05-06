@@ -1,64 +1,48 @@
 {
   "repo_notes": [
     {
-      "content": "This repository is a Docker Compose infrastructure definition for a TCC (undergraduate thesis) project at UPM Mackenzie (2025). It is NOT a software application — there is no build system, no test suite, and no linter. All operations are Docker Compose commands. The repo exists to provision shared local services consumed by sibling microservices (event-hub, projection workers, etc.) that live in separate repositories.\n\nArchitecture: CQRS (Command Query Responsibility Segregation) with two distinct stores on each side.\n\nWRITE SIDE:\n- InfluxDB bucket `events` (infinite retention) — raw checkin/checkout events written by the event-hub outbox worker\n- MariaDB database `eventhub` — entity state, areas registry, outbox table; managed by sqlx migrations in the event-hub repo\n\nREAD SIDE:\n- InfluxDB bucket `projections` (90-day retention) — aggregated time-series produced by projection workers (not yet implemented)\n- MariaDB database `eventhub_read` — materialized views (`area_stats`, `event_log`) for Grafana dashboards; schema defined in mariadb/init/02_read_schema.sql\n\nKey directories:\n- `grafana/` — Grafana provisioning: datasources (3 YAML files) and dashboard provider config\n- `mariadb/init/` — SQL init scripts run once by the mariadb-init container: 01 creates the read DB and enforces user isolation, 02 defines the read-side schema\n- `data/` — gitignored Docker volume mounts (InfluxDB, MariaDB, Redis, Grafana state)\n\nNetwork: All services share the Docker bridge network `shared-infra-network`. Sibling repo compose files join this network with `external: true` to reach the shared services.\n\nSecrets: Only external API tokens are real secrets (kept in `.env`, gitignored). Database credentials are intentionally hardcoded in docker-compose.yml — this is acceptable for a local thesis environment. Vault runs in dev mode (in-memory) and seeds the external tokens from `.env` at startup via vault-init.\n\nThe write-side user (`eventhub`) has NO access to the read database (`eventhub_read`) — this boundary is enforced by explicit REVOKE/GRANT statements in 01_read_database.sql.",
+      "content": "This is infra-local-shared, the shared infrastructure definition for the TCC LVC Smart Cities simulation platform. It is a Docker Compose project — not a software application — that provisions all shared local services consumed by sibling LVC microservices (event-hub, live-ms-java, virtual-ms-java, constructive-ms-python). There is no build system, test suite, or application code.\n\nStack: Docker Compose (orchestration), InfluxDB 2.7 (time-series database), MariaDB 11.4 (relational database), HashiCorp Vault 1.17 (secrets management, dev mode), Grafana (observability dashboards).\n\nArchitecture follows CQRS (Command Query Responsibility Segregation) with two distinct stores on each side. WRITE SIDE: InfluxDB bucket 'events' (infinite retention) for raw LVC events written by the Event Hub outbox worker; MariaDB database 'eventhub' for entity state, areas registry, and outbox table (schema managed by SQLx migrations in the event-hub repo). READ SIDE: InfluxDB bucket 'projections' (90-day retention) for aggregated time-series produced by projection workers; MariaDB database 'eventhub_read' for materialized views (area_stats, event_log) consumed by Grafana dashboards.\n\nAll services share the Docker bridge network 'shared-infra-network'. Sibling repo compose files join this network with 'external: true' to reach the shared services. The startup sequence is enforced by depends_on with healthcheck conditions: InfluxDB and MariaDB must be healthy before init containers run; init containers must complete before event-hub starts; Grafana starts after MariaDB is healthy.\n\nSecrets strategy: external API tokens (OlhoVivo, NVIDIA NIM) are kept in .env (gitignored) and seeded into Vault KV v2 at startup by shared-vault-init. Database credentials are intentionally hardcoded in docker-compose.yml — acceptable for a local thesis environment. Vault runs in dev mode (in-memory, resets on restart).\n\nKey directories: grafana/ (provisioning — 4 datasources, dashboard provider), mariadb/init/ (SQL init scripts for read database and schema), data/ (gitignored Docker volume mounts).\n\nKey architectural patterns: CQRS (segregated write/read databases with user-level isolation), Infrastructure as Code (Docker Compose declarative service definitions), Healthcheck-Driven Startup (ordered dependency chain), Externalized Secrets (Vault + .env pattern).",
       "author": "Rafael Pereira"
     }
   ],
   "pages": [
     {
       "title": "Architecture Overview",
-      "purpose": "High-level overview of the CQRS architecture: what this repo is, how write and read sides are separated across InfluxDB and MariaDB, how the shared Docker network connects sibling microservices, and the overall data flow from event ingestion to Grafana dashboards.",
-      "parent": null
+      "purpose": "High-level overview of infra-local-shared's role as the infrastructure backbone of the LVC platform. Explain the CQRS architecture with segregated write and read sides across InfluxDB and MariaDB, how the shared Docker network (shared-infra-network) connects sibling microservices, and the overall data flow from event ingestion (Event Hub → InfluxDB events + MariaDB eventhub) to visualization (Grafana ← InfluxDB projections + MariaDB eventhub_read). Cover the Docker Compose philosophy (no application code, purely declarative infrastructure) and the 8 defined services."
     },
     {
       "title": "Services Reference",
-      "purpose": "Document all 8 Docker Compose services defined in docker-compose.yml: shared-influxdb, shared-influxdb-init, shared-mariadb, shared-mariadb-init, shared-vault, shared-vault-init, event-hub, and shared-grafana. For each service cover: image/build source, exposed ports, health check, depends_on chain, volume mounts, and environment variables.",
+      "purpose": "Document all 8 Docker Compose services: shared-influxdb (InfluxDB 2.7, port 8086), shared-influxdb-init (bucket creation — events + projections), shared-mariadb (MariaDB 11.4, port 3306), shared-mariadb-init (read database + schema creation), shared-vault (HashiCorp Vault 1.17 dev mode, port 8200), shared-vault-init (secret seeding from .env), event-hub (Rust message broker, port 50051), shared-grafana (Grafana, port 3000). For each: image/build source, exposed ports, health check configuration, depends_on chain, volume mounts, and environment variables.",
       "parent": "Architecture Overview"
     },
     {
       "title": "Startup & Dependency Chain",
-      "purpose": "Document the ordered startup sequence enforced by depends_on and healthcheck conditions: InfluxDB and MariaDB must be healthy before init containers run; init containers must complete before event-hub starts; Grafana starts after MariaDB is healthy. Explain how to use --force-recreate to re-run init containers after config changes.",
+      "purpose": "Document the ordered startup sequence enforced by depends_on with healthcheck conditions. InfluxDB and MariaDB must report healthy before their init containers run; init containers must complete (exit 0) before event-hub starts; Grafana starts after MariaDB is healthy. Explain the --force-recreate flag for re-running init containers after configuration changes, the health check implementations (pg_isready for MariaDB, influx ping for InfluxDB, curl for Vault), and troubleshooting stuck startups.",
       "parent": "Architecture Overview"
     },
     {
       "title": "Write Side",
-      "purpose": "Document the CQRS write side: the InfluxDB `events` bucket (infinite retention, written by the event-hub outbox worker) and the MariaDB `eventhub` database (entity state and outbox, schema managed by sqlx migrations in the event-hub repo). Cover credentials, the eventhub MariaDB user, and the fact that this user cannot access the read database.",
+      "purpose": "Document the CQRS write side infrastructure. InfluxDB: bucket 'events' with infinite retention, written by the Event Hub outbox worker — stores raw LVC events as time-series measurements. MariaDB: database 'eventhub' with entity state tables, areas registry, and outbox_messages table — schema managed by SQLx migrations in the event-hub repo. Cover the eventhub MariaDB user (write-only, cannot access eventhub_read), the credentials, and how the write side guarantees atomicity via Transactional Outbox.",
       "parent": "Architecture Overview"
     },
     {
       "title": "Read Side",
-      "purpose": "Document the CQRS read side: the InfluxDB `projections` bucket (90-day retention, written by future projection workers) and the MariaDB `eventhub_read` database. Cover the read-side MariaDB user, the two materialized-view tables (area_stats and event_log), their columns, indexes, and purpose. Source: mariadb/init/01_read_database.sql and 02_read_schema.sql.",
+      "purpose": "Document the CQRS read side infrastructure. InfluxDB: bucket 'projections' with 90-day retention, written by projection workers — stores aggregated time-series for Grafana dashboards. MariaDB: database 'eventhub_read' with materialized views (area_stats — aggregated counters per area with composite PK; event_log — append-only denormalized event log with idempotency via UNIQUE on event_id). Cover the eventhub_read MariaDB user (read-only isolation), the SQL init scripts (mariadb/init/01_read_database.sql, 02_read_schema.sql), column types, indexes, and the utf8mb4 character set.",
       "parent": "Architecture Overview"
     },
     {
-      "title": "InfluxDB Configuration",
-      "purpose": "Detail the InfluxDB setup: org `tcc-org`, admin credentials, admin token, the two buckets (events and projections) with their retention policies, how the projections bucket is created by the shared-influxdb-init container, and how to add more buckets by editing the init entrypoint and running --force-recreate.",
-      "parent": "Write Side"
-    },
-    {
-      "title": "MariaDB Read Schema",
-      "purpose": "Document the two tables created by mariadb/init/02_read_schema.sql in the `eventhub_read` database: `area_stats` (aggregated counters per area — columns: area_id, entity_type, lvc, total_checkins, total_checkouts, active_count, last_event_at, last_updated; PK is composite) and `event_log` (append-only denormalized event log with idempotency via UNIQUE on event_id). Include column types, indexes, and the utf8mb4 character set rationale.",
-      "parent": "Read Side"
+      "title": "Secrets Management",
+      "purpose": "Document the two-tier secrets strategy. External API tokens (LIVE_MS_JAVA_OLHOVIVO_TOKEN, NVIDIA_NIM_API_KEY) are stored in .env (gitignored) and seeded into Vault KV v2 at startup by shared-vault-init at paths secret/live-ms-java and secret/constructive-airsim-ms. Vault runs in dev mode (root token: tcc-local-root-token, in-memory storage, resets on restart). Database credentials are hardcoded in docker-compose.yml (acceptable for local thesis use). Cover .env.example as the committed template, how to add new secrets (edit vault-init entrypoint + .env + --force-recreate), and the Vault UI at :8200.",
+      "parent": null
     },
     {
       "title": "Grafana Dashboards & Datasources",
-      "purpose": "Document Grafana's auto-provisioned setup: the four datasources (InfluxDB Projections as default, InfluxDB Events, MariaDB Projections, MariaDB Entity State) sourced from grafana/provisioning/datasources/; the file-based dashboard provider in grafana/provisioning/dashboards/provider.yml; how to add new JSON dashboards by placing files in grafana/dashboards/; and the 30-second reload interval.",
-      "parent": "Read Side"
-    },
-    {
-      "title": "Secrets Management",
-      "purpose": "Document the two-tier secrets strategy: external API tokens (LIVE_MS_JAVA_OLHOVIVO_TOKEN, NVIDIA_NIM_API_KEY) are kept in .env (gitignored) and seeded into Vault KV at startup by shared-vault-init at paths secret/live-ms-java and secret/constructive-airsim-ms. Vault runs in dev mode (root token tcc-local-root-token, in-memory, resets on restart). Explain .env.example as the committed template and how to add new secrets via vault-init entrypoint + --force-recreate.",
+      "purpose": "Document Grafana's auto-provisioned observability setup. Four datasources defined in grafana/provisioning/datasources/: InfluxDB Projections (default), InfluxDB Events, MariaDB Projections, MariaDB Entity State. File-based dashboard provider (grafana/provisioning/dashboards/provider.yml) with 30-second reload interval. How to add new JSON dashboards by placing files in grafana/dashboards/. Cover the admin credentials, the Grafana UI at :3000, and how dashboards consume CQRS read-side data.",
       "parent": null
     },
     {
       "title": "Operations Guide",
-      "purpose": "Practical guide for working with this repo: common docker compose commands (up -d, down, logs, restart, --force-recreate), how to connect to each service (InfluxDB UI at :8086, Grafana at :3000, Vault UI at :8200, MariaDB on :3306), hardcoded local credentials for each service, and tips for resetting state by removing data/ subdirectories.",
-      "parent": null
-    },
-    {
-      "title": "Extending the Infrastructure",
-      "purpose": "Step-by-step instructions for the three most common extension tasks: (1) adding a new InfluxDB bucket — append influx bucket create to the influxdb-init entrypoint, then --force-recreate shared-influxdb-init; (2) adding a new Vault secret — add vault kv put to vault-init entrypoint, update .env and .env.example, then --force-recreate shared-vault-init; (3) adding a Grafana datasource — create a YAML file in grafana/provisioning/datasources/ following the existing examples.",
+      "purpose": "Practical guide for working with this infrastructure. Common Docker Compose commands: docker compose up -d (start all), docker compose down (stop all), docker compose logs -f [service] (tail logs), docker compose restart [service] (restart one), docker compose up -d --force-recreate [service] (re-run init containers). How to connect to each service: InfluxDB UI at localhost:8086, Grafana at localhost:3000 (admin/admin), Vault UI at localhost:8200, MariaDB at localhost:3306. Hardcoded local credentials for each service. Resetting state: remove data/ subdirectories and restart. Extending: adding InfluxDB buckets, Vault secrets, or Grafana datasources.",
       "parent": null
     }
   ]
