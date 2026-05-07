@@ -40,6 +40,7 @@ services:
       - INFLUX_ORG=tcc-org
     entrypoint: >
       sh -c "
+        influx bucket list --org tcc-org | grep -q projections ||
         influx bucket create --name projections --org tcc-org --retention 90d
       "
     networks:
@@ -85,7 +86,8 @@ services:
     entrypoint: >
       sh -c "
         mariadb -h shared-mariadb -u root < /sql/01_read_database.sql &&
-        mariadb -h shared-mariadb -u root < /sql/02_read_schema.sql
+        mariadb -h shared-mariadb -u root < /sql/02_read_schema.sql &&
+        mariadb -h shared-mariadb -u root < /sql/03_virtual_areas_database.sql
       "
     volumes:
       - ./mariadb/init:/sql
@@ -134,6 +136,13 @@ services:
       - shared-infra-network
     restart: on-failure
 
+  # ── Proto Codegen — builds Rust stubs from proto-shared ──────────────────────
+  proto-codegen:
+    image: proto-codegen:latest
+    build:
+      context: ../proto-shared
+      dockerfile: codegen.Dockerfile
+
   # ── Event Hub — gRPC event ingestion service ─────────────────────────────────
   event-hub:
     build:
@@ -142,13 +151,14 @@ services:
     container_name: event-hub
     ports:
       - "50051:50051"
-    env_file:
-      - ../event-hub/.env
     volumes:
       - event-hub-data:/data
+      - ../event-hub/config/config.yml:/app/config/config.yml:ro
     networks:
       - shared-infra-network
     depends_on:
+      proto-codegen:
+        condition: service_completed_successfully
       mariadb:
         condition: service_healthy
       mariadb-init:
@@ -189,6 +199,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # ── Virtual Areas MS — geofence detector + Vaadin UI ─────────────────────────
+  virtual-areas-ms-java:
+    build:
+      context: ..
+      dockerfile: virtual-ms-java/virtual-areas/Dockerfile
+    container_name: virtual-areas-ms-java
+    ports:
+      - "8082:8082"
+      - "50052:50052"
+    environment:
+      - MARIADB_HOST=shared-mariadb
+      - EVENTHUB_HOST=event-hub
+      - EVENTHUB_PORT=50051
+      - INFLUXDB_URL=http://shared-influxdb:8086
+      - INFLUXDB_TOKEN=tcc-local-super-secret-token
+      - INFLUXDB_ORG=tcc-org
+      - INFLUXDB_BUCKET=projections
+    networks:
+      - shared-infra-network
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mariadb-init:
+        condition: service_completed_successfully
+      influxdb:
+        condition: service_healthy
+      event-hub:
+        condition: service_started
+    restart: unless-stopped
 
 networks:
   shared-infra-network:
