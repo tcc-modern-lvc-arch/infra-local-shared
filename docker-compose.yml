@@ -87,7 +87,8 @@ services:
       sh -c "
         mariadb -h shared-mariadb -u root < /sql/01_read_database.sql &&
         mariadb -h shared-mariadb -u root < /sql/02_read_schema.sql &&
-        mariadb -h shared-mariadb -u root < /sql/03_virtual_areas_database.sql
+        mariadb -h shared-mariadb -u root < /sql/03_virtual_areas_database.sql &&
+        mariadb -h shared-mariadb -u root < /sql/04_backfill_projections.sql
       "
     volumes:
       - ./mariadb/init:/sql
@@ -181,7 +182,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-clock-panel
+      - GF_PLUGINS_PREINSTALL_SYNC=grafana-clock-panel,volkovlabs-image-panel
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -232,6 +233,7 @@ services:
 
 networks:
   shared-infra-network:
+    name: shared-infra-network
     driver: bridge
 
 volumes:

@@ -4,6 +4,7 @@ datasources:
   # Use this datasource to inspect current entity positions and outbox health.
   - name: MariaDB — Entity State (Write)
     type: mysql
+    uid: mariadb-entity-state-write
     access: proxy
     url: shared-mariadb:3306
     database: eventhub
@@ -21,6 +22,7 @@ datasources:
   # Populated by projection workers; queried by Grafana panels and reports.
   - name: MariaDB — Projections (Read)
     type: mysql
+    uid: mariadb-projections-read
     access: proxy
     url: shared-mariadb:3306
     database: eventhub_read
@@ -33,3 +35,22 @@ datasources:
       connMaxLifetime: 14400
     secureJsonData:
       password: tcc-eventhub-read
+
+  # Virtual-areas registry — area polygons/circles + entity_states.
+  # Used by the operational dashboard to draw area overlays on the map and
+  # to populate the $area template variable.
+  - name: MariaDB — Virtual Areas (Registry)
+    type: mysql
+    uid: mariadb-virtual-areas
+    access: proxy
+    url: shared-mariadb:3306
+    database: virtual_areas
+    user: virtual_areas
+    isDefault: false
+    editable: true
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: tcc-virtual-areas

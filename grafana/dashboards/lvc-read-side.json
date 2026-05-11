@@ -1,0 +1,709 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": { "limit": 100, "matchAny": false, "tags": [], "type": "dashboard" },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {
+      "title": "Reset photo to latest",
+      "type": "link",
+      "url": "/d/lvc-read-side?${__url_time_range}&var-photo_id=",
+      "icon": "external link",
+      "tooltip": "Clear selected photo, show the latest one again",
+      "targetBlank": false,
+      "asDropdown": false,
+      "includeVars": false,
+      "keepTime": true,
+      "tags": []
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "Operations Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(SUM(active_count), 0) AS active FROM area_stats WHERE lvc = 'LIVE' AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring}))",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Active LIVE Entities",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(SUM(active_count), 0) AS active FROM area_stats WHERE lvc = 'VIRTUAL' AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring}))",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Active VIRTUAL Entities",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 12,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(SUM(active_count), 0) AS active FROM area_stats WHERE lvc = 'CONSTRUCTIVE' AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring}))",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Active CONSTRUCTIVE Entities",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 13,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS flood_alerts FROM flood_alerts WHERE $__timeFilter(occurred_at) AND (area_id IN (${area:sqlstring}))",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Flood Alerts",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "datasource", "uid": "-- Mixed --" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 14, "w": 12, "x": 0, "y": 5 },
+      "id": 1,
+      "options": {
+        "basemap": { "name": "Layer 0", "type": "default" },
+        "controls": { "mouseWheelZoom": true, "showAttribution": true, "showZoom": true, "showScale": true, "showMeasure": false, "showDebug": false },
+        "layers": [
+          {
+            "config": {
+              "showLegend": false,
+              "style": {
+                "color": { "fixed": "dark-blue" },
+                "opacity": 0.3,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "field": "size_px", "fixed": 30, "max": 80, "min": 15 },
+                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "textConfig": { "fontSize": 10, "offsetX": 0, "offsetY": 0, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "Polygon / corridor areas",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "POLY" }
+          },
+          {
+            "config": {
+              "showLegend": false,
+              "style": {
+                "color": { "fixed": "dark-yellow" },
+                "opacity": 0.3,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "field": "size_px", "fixed": 30, "max": 80, "min": 10 },
+                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "textConfig": { "fontSize": 10, "offsetX": 0, "offsetY": 0, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "Circle areas",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "CIRC" }
+          },
+          {
+            "config": {
+              "showLegend": false,
+              "style": {
+                "color": { "fixed": "text" },
+                "opacity": 1,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "fixed": 6 },
+                "symbol": { "fixed": "img/icons/marker/star.svg", "mode": "fixed" },
+                "text": { "field": "label", "fixed": "", "mode": "field" },
+                "textConfig": { "fontSize": 11, "offsetX": 0, "offsetY": -12, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "Area labels",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "LABEL" }
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "fixed": "green" },
+                "opacity": 0.85,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "fixed": 7 },
+                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "textConfig": { "fontSize": 10, "offsetX": 0, "offsetY": 0, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "LIVE entities",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "LIVE" }
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "fixed": "blue" },
+                "opacity": 0.85,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "fixed": 7 },
+                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "textConfig": { "fontSize": 10, "offsetX": 0, "offsetY": 0, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "VIRTUAL entities",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "VIRT" }
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "fixed": "purple" },
+                "opacity": 0.85,
+                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
+                "size": { "fixed": 7 },
+                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "textConfig": { "fontSize": 10, "offsetX": 0, "offsetY": 0, "textAlign": "center", "textBaseline": "middle" }
+              }
+            },
+            "location": { "mode": "auto" },
+            "name": "CONSTRUCTIVE entities",
+            "tooltip": true,
+            "type": "markers",
+            "filterData": { "id": "byRefId", "options": "CONS" }
+          }
+        ],
+        "tooltip": { "mode": "details" },
+        "view": { "id": "coords", "lat": -23.55, "lon": -46.63, "zoom": 11 }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-virtual-areas" },
+          "dataset": "virtual_areas",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT a.id, a.name, a.action, AVG(jt.lat) AS lat, AVG(jt.lon) AS lon, SQRT(POW((MAX(jt.lat) - MIN(jt.lat)) * 111000, 2) + POW((MAX(jt.lon) - MIN(jt.lon)) * 111000 * COS(RADIANS(AVG(jt.lat))), 2)) / 2 AS size_px FROM areas a JOIN JSON_TABLE(a.coordinates, '$[*]' COLUMNS (lat DOUBLE PATH '$.lat', lon DOUBLE PATH '$.lon')) jt WHERE a.area_type IN ('POLYGON','CORRIDOR') AND a.active = 1 AND (a.id IN (${area:sqlstring})) GROUP BY a.id, a.name, a.action",
+          "refId": "POLY",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        },
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-virtual-areas" },
+          "dataset": "virtual_areas",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT a.id, a.name, a.action, a.radius_meters AS size_px, CAST(JSON_VALUE(a.coordinates, '$[0].lat') AS DOUBLE) AS lat, CAST(JSON_VALUE(a.coordinates, '$[0].lon') AS DOUBLE) AS lon FROM areas a WHERE a.area_type = 'CIRCLE' AND a.active = 1 AND (a.id IN (${area:sqlstring}))",
+          "refId": "CIRC",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        },
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-virtual-areas" },
+          "dataset": "virtual_areas",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT a.name AS label, AVG(jt.lat) AS lat, AVG(jt.lon) AS lon FROM areas a JOIN JSON_TABLE(a.coordinates, '$[*]' COLUMNS (lat DOUBLE PATH '$.lat', lon DOUBLE PATH '$.lon')) jt WHERE a.area_type IN ('POLYGON','CORRIDOR') AND a.active = 1 AND (a.id IN (${area:sqlstring})) GROUP BY a.id, a.name UNION ALL SELECT a.name AS label, CAST(JSON_VALUE(a.coordinates, '$[0].lat') AS DOUBLE) AS lat, CAST(JSON_VALUE(a.coordinates, '$[0].lon') AS DOUBLE) AS lon FROM areas a WHERE a.area_type = 'CIRCLE' AND a.active = 1 AND (a.id IN (${area:sqlstring}))",
+          "refId": "LABEL",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        },
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT entity_id, entity_type, event_type, lat, lon, occurred_at FROM event_log WHERE lat IS NOT NULL AND lon IS NOT NULL AND lvc = 'LIVE' AND $__timeFilter(occurred_at) AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring})) AND ('LIVE' IN (${lvc:sqlstring})) ORDER BY occurred_at DESC LIMIT 500",
+          "refId": "LIVE",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        },
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT entity_id, entity_type, event_type, lat, lon, occurred_at FROM event_log WHERE lat IS NOT NULL AND lon IS NOT NULL AND lvc = 'VIRTUAL' AND $__timeFilter(occurred_at) AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring})) AND ('VIRTUAL' IN (${lvc:sqlstring})) ORDER BY occurred_at DESC LIMIT 500",
+          "refId": "VIRT",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        },
+        {
+          "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT entity_id, entity_type, event_type, lat, lon, occurred_at FROM event_log WHERE lat IS NOT NULL AND lon IS NOT NULL AND lvc = 'CONSTRUCTIVE' AND $__timeFilter(occurred_at) AND (entity_type IN (${entity_type:sqlstring})) AND (area_id IN (${area:sqlstring})) AND ('CONSTRUCTIVE' IN (${lvc:sqlstring})) ORDER BY occurred_at DESC LIMIT 500",
+          "refId": "CONS",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Operational Map",
+      "type": "geomap"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "active_count" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } },
+              { "id": "color", "value": { "mode": "continuous-GrYlRd" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lvc" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              { "id": "mappings", "value": [{ "options": { "LIVE": { "color": "green", "index": 0 }, "VIRTUAL": { "color": "blue", "index": 1 }, "CONSTRUCTIVE": { "color": "purple", "index": 2 } }, "type": "value" }] }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 14, "w": 12, "x": 12, "y": 5 },
+      "id": 2,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(va.name, s.area_id) AS area, s.entity_type, s.lvc, s.total_checkins, s.total_checkouts, s.active_count, s.last_event_at FROM area_stats s LEFT JOIN virtual_areas.areas va ON va.id = s.area_id WHERE (s.lvc IN (${lvc:sqlstring})) AND (s.entity_type IN (${entity_type:sqlstring})) AND (s.area_id IN (${area:sqlstring})) ORDER BY s.active_count DESC",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Active Entities by Area",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "event_type" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "mappings",
+                "value": [{ "options": {
+                  "CHECKIN":  { "color": "green",  "index": 0 },
+                  "CHECKOUT": { "color": "orange", "index": 1 },
+                  "MOVE":     { "color": "blue",   "index": 2 },
+                  "PHOTO":    { "color": "super-light-blue", "index": 3 },
+                  "CRASH":    { "color": "red",    "index": 4 }
+                }, "type": "value" }]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lvc" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              { "id": "mappings", "value": [{ "options": { "LIVE": { "color": "green", "index": 0 }, "VIRTUAL": { "color": "blue", "index": 1 }, "CONSTRUCTIVE": { "color": "purple", "index": 2 } }, "type": "value" }] }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 19 },
+      "id": 3,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "occurred_at" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT el.event_id, COALESCE(va.name, el.area_id) AS area, el.entity_id, el.entity_type, el.event_type, el.lvc, el.source, el.lat, el.lon, el.occurred_at FROM event_log el LEFT JOIN virtual_areas.areas va ON va.id = el.area_id WHERE $__timeFilter(el.occurred_at) AND (el.lvc IN (${lvc:sqlstring})) AND (el.entity_type IN (${entity_type:sqlstring})) AND (el.area_id IN (${area:sqlstring})) ORDER BY el.occurred_at DESC LIMIT 1000",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Event Log",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 200,
+      "panels": [],
+      "title": "Alerts & Audit",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "mappings",
+                "value": [{ "options": {
+                  "CRITICAL": { "color": "red",    "index": 2 },
+                  "WARNING":  { "color": "orange", "index": 1 },
+                  "INFO":     { "color": "blue",   "index": 0 }
+                }, "type": "value" }]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 46 },
+      "id": 5,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "occurred_at" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT fa.id, COALESCE(va.name, fa.area_id) AS area, fa.alert_type, fa.severity, fa.message, fa.lat, fa.lon, fa.occurred_at FROM flood_alerts fa LEFT JOIN virtual_areas.areas va ON va.id = fa.area_id WHERE $__timeFilter(fa.occurred_at) AND (fa.area_id IN (${area:sqlstring})) ORDER BY fa.occurred_at DESC LIMIT 500",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Flood Alerts per Area",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 32 },
+      "id": 6,
+      "options": {
+        "name": "image",
+        "description": "caption",
+        "scale": "auto",
+        "toolbar": false,
+        "url": "",
+        "title": "",
+        "infoSize": 12,
+        "controls": { "autoPlay": false, "infinityPlay": false }
+      },
+      "pluginVersion": "5.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CONCAT('data:image/jpeg;base64,', dp.image_base64) AS image, CONCAT(COALESCE(va.name, dp.area_id), ' • drone ', dp.drone_id, ' • alt ', COALESCE(CAST(dp.altitude AS CHAR), '?'), 'm • ', DATE_FORMAT(dp.captured_at, '%Y-%m-%d %H:%i:%s'), CASE WHEN '${photo_id}' = '' THEN ' • (latest)' ELSE '' END) AS caption FROM drone_photos dp LEFT JOIN virtual_areas.areas va ON va.id = dp.area_id WHERE dp.image_base64 IS NOT NULL AND ('${photo_id}' = '' OR dp.event_id = '${photo_id}') AND ('${photo_id}' <> '' OR ($__timeFilter(dp.captured_at) AND (dp.area_id IN (${area:sqlstring})))) ORDER BY dp.captured_at DESC LIMIT 1",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Drone Photo",
+      "description": "Shows the latest drone photo by default. Click a row in 'Drone Photo Log' to load a specific one.",
+      "type": "volkovlabs-image-panel"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "links": [
+            {
+              "title": "View this photo",
+              "url": "/d/lvc-read-side?${__url_time_range}&var-photo_id=${__data.fields[\"event_id\"]}",
+              "targetBlank": false
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "event_id" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 46 },
+      "id": 9,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "captured_at" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT dp.event_id, dp.drone_id, dp.mission_id, COALESCE(va.name, dp.area_id) AS area, dp.altitude, dp.captured_at FROM drone_photos dp LEFT JOIN virtual_areas.areas va ON va.id = dp.area_id WHERE $__timeFilter(dp.captured_at) AND (dp.area_id IN (${area:sqlstring})) ORDER BY dp.captured_at DESC LIMIT 50",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Drone Photo Log",
+      "description": "Click any cell to load that photo in the panel above. Clear ?var-photo_id= in URL to reset to latest.",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                { "color": "green",  "value": null },
+                { "color": "orange", "value": 0.5 },
+                { "color": "red",    "value": 0.8 }
+              ]}}
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 },
+      "id": 8,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "occurred_at" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "dataset": "eventhub_read",
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT dc.drone_id, COALESCE(va.name, dc.area_id) AS area, dc.severity, dc.collision_object, dc.lat, dc.lon, dc.altitude, dc.occurred_at FROM drone_crashes dc LEFT JOIN virtual_areas.areas va ON va.id = dc.area_id WHERE $__timeFilter(dc.occurred_at) AND (dc.area_id IN (${area:sqlstring})) ORDER BY dc.occurred_at DESC LIMIT 200",
+          "refId": "A",
+          "sql": { "columns": [], "groupBy": [], "limit": 50 }
+        }
+      ],
+      "title": "Drone Crashes",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["lvc", "cqrs", "read-side"],
+  "templating": {
+    "list": [
+      {
+        "name": "lvc",
+        "label": "LVC",
+        "type": "custom",
+        "query": "LIVE,VIRTUAL,CONSTRUCTIVE",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": ["All"], "value": ["$__all"], "selected": true },
+        "options": [
+          { "text": "LIVE",         "value": "LIVE",         "selected": false },
+          { "text": "VIRTUAL",      "value": "VIRTUAL",      "selected": false },
+          { "text": "CONSTRUCTIVE", "value": "CONSTRUCTIVE", "selected": false }
+        ],
+        "skipUrlSync": false
+      },
+      {
+        "name": "entity_type",
+        "label": "Entity Type",
+        "type": "query",
+        "datasource": { "type": "mysql", "uid": "mariadb-projections-read" },
+        "definition": "SELECT DISTINCT entity_type FROM event_log ORDER BY 1",
+        "query": "SELECT DISTINCT entity_type FROM event_log ORDER BY 1",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": ["All"], "value": ["$__all"], "selected": true },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      },
+      {
+        "name": "area",
+        "label": "Area",
+        "type": "query",
+        "datasource": { "type": "mysql", "uid": "mariadb-virtual-areas" },
+        "definition": "SELECT name AS __text, id AS __value FROM areas WHERE active = 1 ORDER BY name",
+        "query": "SELECT name AS __text, id AS __value FROM areas WHERE active = 1 ORDER BY name",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": ["All"], "value": ["$__all"], "selected": true },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      },
+      {
+        "name": "photo_id",
+        "label": "Photo ID",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "", "selected": false },
+        "options": [],
+        "hide": 2,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "LVC Read Side — CQRS Projections",
+  "uid": "lvc-read-side",
+  "version": 13,
+  "weekStart": ""
+}

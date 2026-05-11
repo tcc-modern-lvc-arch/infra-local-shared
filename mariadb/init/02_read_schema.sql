@@ -42,3 +42,65 @@ CREATE TABLE IF NOT EXISTS event_log (
     INDEX        idx_event_log_area   (area_id,    occurred_at),
     INDEX        idx_event_log_entity (entity_id,  occurred_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── flood_alerts ──────────────────────────────────────────────────────────────
+-- Flood alerts reported by CGESP per area.
+-- Populated by the projection worker consuming CGESP alert events.
+CREATE TABLE IF NOT EXISTS flood_alerts (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    event_id     VARCHAR(36)  NOT NULL,
+    area_id      VARCHAR(36)  NOT NULL,
+    alert_type   VARCHAR(50)  NOT NULL,
+    severity     ENUM('INFO','WARNING','CRITICAL') NOT NULL DEFAULT 'INFO',
+    message      TEXT,
+    lat          DECIMAL(10, 8),
+    lon          DECIMAL(11, 8),
+    occurred_at  DATETIME     NOT NULL,
+    recorded_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE  KEY uk_flood_alerts_event_id (event_id),
+    INDEX        idx_flood_alerts_area (area_id, occurred_at),
+    INDEX        idx_flood_alerts_sev  (severity, occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── drone_photos ──────────────────────────────────────────────────────────────
+-- Metadata and base64-encoded images captured by AirSim drones.
+-- Populated by the projection worker consuming BusPhotoEvent.
+CREATE TABLE IF NOT EXISTS drone_photos (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    event_id     VARCHAR(36)  NOT NULL,
+    drone_id     VARCHAR(255) NOT NULL,
+    mission_id   VARCHAR(255),
+    area_id      VARCHAR(36),
+    image_base64 LONGTEXT,
+    lat          DECIMAL(10, 8),
+    lon          DECIMAL(11, 8),
+    altitude     DECIMAL(10, 2),
+    captured_at  DATETIME     NOT NULL,
+    recorded_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE  KEY uk_drone_photos_event_id (event_id),
+    INDEX        idx_drone_photos_drone   (drone_id, captured_at),
+    INDEX        idx_drone_photos_mission (mission_id, captured_at),
+    INDEX        idx_drone_photos_area    (area_id, captured_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── drone_crashes ─────────────────────────────────────────────────────────────
+-- CRASH events from AirSim drones (collision with obstacles).
+-- Populated by the projection worker consuming EventKind::Crash.
+CREATE TABLE IF NOT EXISTS drone_crashes (
+    id               BIGINT       NOT NULL AUTO_INCREMENT,
+    event_id         VARCHAR(36)  NOT NULL,
+    drone_id         VARCHAR(255) NOT NULL,
+    area_id          VARCHAR(36),
+    severity         DECIMAL(3, 2),
+    collision_object VARCHAR(255),
+    lat              DECIMAL(10, 8),
+    lon              DECIMAL(11, 8),
+    altitude         DECIMAL(10, 2),
+    occurred_at      DATETIME     NOT NULL,
+    recorded_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE  KEY uk_drone_crashes_event_id (event_id),
+    INDEX        idx_drone_crashes_drone  (drone_id, occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
